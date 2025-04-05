@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --lavender: #E6E6FA;
+  --mint: #98FB98;
+  --babyblue: #ADD8E6;
+  --palepink: #FFCFDA;
+}
+
+body {
+  @apply font-sans text-gray-800 bg-gradient-to-br from-lavender via-babyblue to-mint bg-fixed min-h-screen;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(155, 155, 255, 0.5);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(155, 155, 255, 0.8);
+}
+
+/* Animation utility classes */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Glass effect */
+.glass {
+  @apply backdrop-blur-md bg-white/30 border border-white/20 shadow-lg;
+}
+
+/* Gradient text */
+.gradient-text {
+  @apply text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400;
+}
+
+/* Day/Night mode transitions */
+.day-mode {
+  @apply bg-gradient-to-br from-lavender via-babyblue to-mint transition-colors duration-1000;
+}
+
+.night-mode {
+  @apply bg-gradient-to-br from-darklavender via-darkblue to-darkpink transition-colors duration-1000;
+}
