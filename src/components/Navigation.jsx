@@ -28,12 +28,12 @@ const Navigation = () => {
 
   return (
     <motion.nav 
-      className="fixed bottom-6 left-1/2 transform -translate-x-1/2 glass rounded-full px-2 sm:px-4 py-2 z-50 shadow-lg"
+      className="fixed bottom-6 left-1/2 transform -translate-x-1/2 glass rounded-full px-1 sm:px-4 py-1 sm:py-2 z-50 shadow-lg max-w-[95%] overflow-x-auto"
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, delay: 0.2 }}
     >
-      <div className="flex items-center space-x-2 sm:space-x-6">
+      <div className="flex items-center space-x-1 sm:space-x-6">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -45,7 +45,7 @@ const Navigation = () => {
               <motion.div
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.9 }}
-                className={`flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full ${
+                className={`flex items-center justify-center h-8 w-8 sm:h-12 sm:w-12 rounded-full ${
                   isActive 
                     ? 'bg-white/40 text-purple-700' 
                     : 'text-gray-600 hover:text-purple-600'
@@ -63,9 +63,9 @@ const Navigation = () => {
                 )}
               </motion.div>
               
-              {/* Label */}
+              {/* Label - hide on smallest screens */}
               <motion.span 
-                className={`text-xs mt-1 ${isActive ? 'text-purple-700' : 'text-gray-600'}`}
+                className={`text-[10px] sm:text-xs mt-0.5 sm:mt-1 ${isActive ? 'text-purple-700' : 'text-gray-600'}`}
                 animate={{ opacity: isActive ? 1 : 0.7 }}
               >
                 {item.label}
@@ -79,9 +79,9 @@ const Navigation = () => {
           whileHover={{ scale: 1.2 }}
           whileTap={{ scale: 0.9 }}
           onClick={toggleTheme}
-          className="flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full text-gray-600 hover:text-purple-600"
+          className="flex items-center justify-center h-8 w-8 sm:h-12 sm:w-12 rounded-full text-gray-600 hover:text-purple-600"
         >
-          <FaMoon className={`text-lg sm:text-xl ${theme === 'dark' ? 'text-yellow-300' : 'text-gray-600'}`} />
+          <FaMoon className={`text-sm sm:text-xl ${theme === 'dark' ? 'text-yellow-300' : 'text-gray-600'}`} />
         </motion.button>
       </div>
     </motion.nav>
