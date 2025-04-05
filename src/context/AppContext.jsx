@@ -14,7 +14,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // State
-  const [theme, setTheme] = useState(isNightTime() ? 'dark' : 'light');
+  const [theme, setTheme] = useState('dark');
   const [favorites, setFavorites] = useState([]);
   const [currentMeditation, setCurrentMeditation] = useState(null);
   const [currentStory, setCurrentStory] = useState(null);
@@ -49,7 +49,7 @@ export const AppProvider = ({ children }) => {
         if (savedTheme) {
           setTheme(savedTheme);
         } else if (userPreferences.autoNightMode) {
-          setTheme(isNightTime() ? 'dark' : 'light');
+          setTheme('dark');
         }
       } catch (error) {
         console.error('Error loading saved data:', error);
@@ -77,13 +77,21 @@ export const AppProvider = ({ children }) => {
     if (!userPreferences.autoNightMode) return;
 
     const checkTime = () => {
-      setTheme(isNightTime() ? 'dark' : 'light');
+      // Only switch to light mode during day, keep dark mode at night
+      if (!isNightTime() && theme === 'dark') {
+        // We won't automatically switch from dark to light
+        // This ensures dark mode stays as default
+        return;
+      } else if (isNightTime() && theme === 'light') {
+        // Switch to dark mode if it's night time and currently in light mode
+        setTheme('dark');
+      }
     };
 
     // Check every hour
     const interval = setInterval(checkTime, 3600000);
     return () => clearInterval(interval);
-  }, [userPreferences.autoNightMode]);
+  }, [userPreferences.autoNightMode, theme]);
 
   // Toggle favorite
   const toggleFavorite = (id, type) => {
