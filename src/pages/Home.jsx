@@ -180,7 +180,7 @@ const Home = () => {
       {/* Quick access cards */}
       <motion.div variants={itemVariants}>
         <h2 className="text-xl font-medium mb-4">Quick Start</h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col sm:grid grid-cols-2 gap-4">
           <QuickAccessCard
             title="5-Min Calm"
             description="A quick meditation to center yourself"
@@ -255,21 +255,45 @@ const Home = () => {
       {/* Recommended for you */}
       <motion.div variants={itemVariants} className="mt-8 mb-20">
         <h2 className="text-xl font-medium mb-4">Recommended for You</h2>
-        <div className="glass rounded-xl p-4 flex items-center">
-          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-2xl mr-4">
-            🌊
+        
+        {/* First recommendation */}
+        <div className="glass rounded-xl p-4 flex flex-col sm:flex-row items-center mb-4">
+          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-400 to-blue-400 flex items-center justify-center text-2xl mb-3 sm:mb-0 sm:mr-4">
+            🧠
           </div>
-          <div>
-            <h3 className="font-medium">Ocean Waves Meditation</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">15 minutes • Stress Relief</p>
+          <div className="text-center sm:text-left mb-3 sm:mb-0">
+            <h3 className="font-medium">Focus Meditation</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">10 minutes • Concentration</p>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            className="ml-auto w-10 h-10 rounded-full bg-white/30 flex items-center justify-center"
-          >
-            ▶️
-          </motion.button>
+          <Link to="/meditations/focus" className="sm:ml-auto">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center"
+            >
+              ▶️
+            </motion.button>
+          </Link>
+        </div>
+        
+        {/* Second recommendation */}
+        <div className="glass rounded-xl p-4 flex flex-col sm:flex-row items-center">
+          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-2xl mb-3 sm:mb-0 sm:mr-4">
+            🌙
+          </div>
+          <div className="text-center sm:text-left mb-3 sm:mb-0">
+            <h3 className="font-medium">Evening Release</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">15 minutes • Sleep Preparation</p>
+          </div>
+          <Link to="/meditations/evening-release" className="sm:ml-auto">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center"
+            >
+              ▶️
+            </motion.button>
+          </Link>
         </div>
       </motion.div>
     </motion.div>

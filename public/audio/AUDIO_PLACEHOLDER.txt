@@ -1,0 +1,22 @@
+AUDIO FILES PLACEHOLDER
+
+In a production environment, you would place actual audio files in these directories:
+
+1. /audio/meditations/ - For guided meditation narrations
+2. /audio/backgrounds/ - For ambient background sounds
+3. /audio/sleep-stories/ - For sleep story narrations
+
+Since we're using a development environment, the app will gracefully handle missing audio files.
+The AudioService is fully implemented and ready to use with real audio files.
+
+To add real audio files:
+1. Place MP3 files in the appropriate directories
+2. Make sure the filenames match those in src/data/audioData.js
+3. Restart the development server
+
+Example file structure:
+/audio/meditations/quick-calm.mp3
+/audio/backgrounds/gentle-waves.mp3
+/audio/sleep-stories/ocean-journey.mp3
+
+The audio functionality is fully implemented and will work once real audio files are added.

@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaHeart, FaRegHeart, FaArrowLeft, FaClock, FaPause, FaPlay } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaArrowLeft, FaClock, FaPause, FaPlay, FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { useAppContext } from '../context/AppContext';
+import { storyAudioData } from '../data/audioData';
+import useAudio from '../hooks/useAudio';
+import AudioVisualizer from '../animations/AudioVisualizer';
 
 // Animation variants
 const containerVariants = {
@@ -125,7 +128,7 @@ const NightSkyAnimation = ({ playing }) => {
 };
 
 // Progress bar component
-const ProgressBar = ({ progress, duration }) => {
+const ProgressBar = ({ progress, duration, seek }) => {
   // Format time as MM:SS
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -135,16 +138,56 @@ const ProgressBar = ({ progress, duration }) => {
   
   return (
     <div className="w-full mb-6">
-      <div className="flex justify-between text-sm text-white/70 mb-1">
+      <div className="flex justify-between text-sm text-indigo-900 mb-1 font-medium">
         <span>{formatTime(progress * duration * 60)}</span>
         <span>{formatTime(duration * 60)}</span>
       </div>
-      <div className="h-1 bg-white/20 rounded-full overflow-hidden">
+      <div 
+        className="h-1 bg-white/20 rounded-full overflow-hidden cursor-pointer"
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const newProgress = (e.clientX - rect.left) / rect.width;
+          seek(Math.max(0, Math.min(1, newProgress)));
+        }}
+      >
         <motion.div 
           className="h-full bg-gradient-to-r from-purple-400 to-blue-400"
           style={{ width: `${progress * 100}%` }}
           transition={{ type: "tween" }}
         />
+      </div>
+    </div>
+  );
+};
+
+// Volume controls component
+const VolumeControls = ({ 
+  volume, 
+  onVolumeChange, 
+  muted, 
+  onMuteToggle 
+}) => {
+  return (
+    <div className="mb-4 sm:mb-6">
+      <div className="flex items-center justify-between mb-2 sm:mb-4">
+        <span className="text-indigo-900 text-sm font-medium">Volume</span>
+        <div className="flex items-center">
+          <input 
+            type="range" 
+            min="0" 
+            max="1" 
+            step="0.01" 
+            value={volume} 
+            onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+            className="w-24 sm:w-32 accent-purple-400"
+          />
+          <button 
+            onClick={onMuteToggle}
+            className="ml-2 text-indigo-900"
+          >
+            {muted ? <FaVolumeMute /> : <FaVolumeUp />}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -156,32 +199,31 @@ const SleepTimer = ({ onTimerChange }) => {
   const timers = [15, 30, 45, 60, 'Off'];
   
   const handleTimerChange = (timer) => {
-    setActiveTimer(timer);
-    onTimerChange(timer);
+    if (timer === 'Off' || timer === activeTimer) {
+      setActiveTimer(null);
+      onTimerChange(null);
+    } else {
+      setActiveTimer(timer);
+      onTimerChange(timer);
+    }
   };
   
   return (
     <div className="mb-6">
-      <div className="flex items-center mb-2">
-        <FaClock className="mr-2 text-purple-300" />
-        <h3 className="text-lg font-medium text-white">Sleep Timer</h3>
-      </div>
-      
+      <p className="text-indigo-900 text-sm font-medium mb-2 sm:mb-3">Sleep Timer</p>
       <div className="flex flex-wrap gap-2">
-        {timers.map(timer => (
-          <motion.button
+        {timers.map((timer) => (
+          <button
             key={timer}
             onClick={() => handleTimerChange(timer)}
-            className={`px-4 py-2 rounded-full ${
-              activeTimer === timer 
-                ? 'bg-purple-500/50 text-white' 
-                : 'bg-white/10 text-gray-300 hover:bg-white/20'
-            }`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            className={`px-3 py-1 rounded-full text-sm ${
+              activeTimer === timer
+                ? 'bg-indigo-500 text-white'
+                : 'bg-white/30 text-indigo-900 hover:bg-white/50'
+            } transition-colors`}
           >
             {timer === 'Off' ? timer : `${timer} min`}
-          </motion.button>
+          </button>
         ))}
       </div>
     </div>
@@ -196,34 +238,33 @@ const StoryDetail = () => {
   // Find story data by ID
   const story = storiesData.find(s => s.id === id) || storiesData[0];
   
-  // State
-  const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
+  // Get audio data for this story
+  const audioData = storyAudioData[story.id] || {};
+  
+  // State for sleep timer
   const [sleepTimer, setSleepTimer] = useState(null);
   const [remainingTime, setRemainingTime] = useState(null);
   
-  // Play/pause story
-  const togglePlay = () => {
-    setPlaying(!playing);
-  };
-  
-  // Simulate progress
-  useEffect(() => {
-    if (!playing) return;
-    
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 1) {
-          setPlaying(false);
-          clearInterval(interval);
-          return 1;
-        }
-        return prev + 0.001;
-      });
-    }, 100);
-    
-    return () => clearInterval(interval);
-  }, [playing]);
+  // Use our custom audio hook
+  const {
+    loading,
+    playing,
+    muted,
+    volume,
+    progress,
+    togglePlay,
+    toggleMute,
+    seek,
+    setVolume,
+  } = useAudio({
+    mainAudioUrl: audioData.audioUrl,
+    backgroundAudioUrl: audioData.backgroundAudioUrl,
+    onEndCallback: () => {
+      // Reset sleep timer when audio ends naturally
+      setSleepTimer(null);
+      setRemainingTime(null);
+    }
+  });
   
   // Handle sleep timer
   useEffect(() => {
@@ -236,7 +277,7 @@ const StoryDetail = () => {
     const interval = setInterval(() => {
       setRemainingTime(prev => {
         if (prev <= 1) {
-          setPlaying(false);
+          togglePlay(); // Stop playback when timer ends
           clearInterval(interval);
           return 0;
         }
@@ -299,20 +340,30 @@ const StoryDetail = () => {
         {/* Story info */}
         <motion.div variants={itemVariants} className="mb-8 text-center">
           <div className="text-5xl mb-4">{story.image}</div>
-          <h1 className="text-2xl font-medium mb-2 text-white">{story.title}</h1>
-          <p className="text-white/70 mb-2">{story.duration} min • {story.category}</p>
+          <h1 className="text-2xl font-medium mb-2 text-indigo-900">{story.title}</h1>
+          <p className="text-indigo-800 mb-2">{story.duration} min • {story.category}</p>
         </motion.div>
         
         {/* Story description */}
         <motion.div variants={itemVariants} className="mb-8">
-          <div className="glass rounded-xl p-6 bg-black/20">
-            <p className="text-white/80 leading-relaxed">{story.longDescription}</p>
+          <div className="glass rounded-xl p-6 bg-white/10 shadow-lg">
+            <p className="text-indigo-900 leading-relaxed font-semibold">{story.longDescription}</p>
           </div>
         </motion.div>
         
         {/* Sleep timer */}
         <motion.div variants={itemVariants}>
           <SleepTimer onTimerChange={setSleepTimer} />
+        </motion.div>
+        
+        {/* Volume controls */}
+        <motion.div variants={itemVariants}>
+          <VolumeControls 
+            volume={volume}
+            onVolumeChange={setVolume}
+            muted={muted}
+            onMuteToggle={toggleMute}
+          />
         </motion.div>
         
         {/* Player controls */}
@@ -329,8 +380,18 @@ const StoryDetail = () => {
             </div>
           )}
           
+          {/* Audio visualizer */}
+          <div className="mb-6 h-40 rounded-xl overflow-hidden glass">
+            <AudioVisualizer 
+              isPlaying={playing}
+              intensity={0.6}
+              type={story.id === 'night-train' ? 'particles' : story.id === 'ocean-journey' ? 'circle' : 'wave'}
+              color={`rgba(${story.id === 'night-train' ? '135, 206, 250' : story.id === 'ocean-journey' ? '64, 224, 208' : '186, 85, 211'}, 0.7)`}
+            />
+          </div>
+          
           {/* Progress bar */}
-          <ProgressBar progress={progress} duration={story.duration} />
+          <ProgressBar progress={progress} duration={story.duration} seek={seek} />
           
           {/* Play/pause button */}
           <div className="flex justify-center">

@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaHeart, FaRegHeart, FaArrowLeft, FaVolumeUp, FaVolumeMute, FaPause, FaPlay } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaArrowLeft, FaClock, FaPause, FaPlay, FaVolumeUp, FaVolumeMute } from 'react-icons/fa';
 import { useAppContext } from '../context/AppContext';
+import { meditationAudioData } from '../data/audioData';
+import useAudio from '../hooks/useAudio';
+import AudioVisualizer from '../animations/AudioVisualizer';
 
 // Animation variants
 const containerVariants = {
@@ -192,7 +195,7 @@ const AudioResponsiveParticles = ({ playing, intensity = 0.5 }) => {
 };
 
 // Progress bar with gradient
-const ProgressBar = ({ progress, duration }) => {
+const ProgressBar = ({ progress, duration, seek }) => {
   // Format time as MM:SS
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -202,16 +205,56 @@ const ProgressBar = ({ progress, duration }) => {
   
   return (
     <div className="w-full mb-6">
-      <div className="flex justify-between text-sm text-white/70 mb-1">
+      <div className="flex justify-between text-sm text-indigo-900 mb-1 font-medium">
         <span>{formatTime(progress * duration * 60)}</span>
         <span>{formatTime(duration * 60)}</span>
       </div>
-      <div className="h-1 bg-white/20 rounded-full overflow-hidden">
+      <div 
+        className="h-1 bg-white/20 rounded-full overflow-hidden cursor-pointer"
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const newProgress = (e.clientX - rect.left) / rect.width;
+          seek(Math.max(0, Math.min(1, newProgress)));
+        }}
+      >
         <motion.div 
           className="h-full bg-gradient-to-r from-purple-400 to-pink-400"
           style={{ width: `${progress * 100}%` }}
           transition={{ type: "tween" }}
         />
+      </div>
+    </div>
+  );
+};
+
+// Volume controls component
+const VolumeControls = ({ 
+  volume, 
+  onVolumeChange, 
+  muted, 
+  onMuteToggle 
+}) => {
+  return (
+    <div className="mb-4 sm:mb-6">
+      <div className="flex items-center justify-between mb-2 sm:mb-4">
+        <span className="text-indigo-900 text-sm font-medium">Volume</span>
+        <div className="flex items-center">
+          <input 
+            type="range" 
+            min="0" 
+            max="1" 
+            step="0.01" 
+            value={volume} 
+            onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+            className="w-24 sm:w-32 accent-purple-400"
+          />
+          <button 
+            onClick={onMuteToggle}
+            className="ml-2 text-indigo-900"
+          >
+            {muted ? <FaVolumeMute /> : <FaVolumeUp />}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -225,34 +268,24 @@ const MeditationDetail = () => {
   // Find meditation data by ID
   const meditation = meditationData.find(m => m.id === id) || meditationData[0];
   
-  // State
-  const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [volume, setVolume] = useState({ narration: 0.8, background: 0.5 });
-  const [muted, setMuted] = useState(false);
+  // Get audio data for this meditation
+  const audioData = meditationAudioData[meditation.id] || {};
   
-  // Play/pause meditation
-  const togglePlay = () => {
-    setPlaying(!playing);
-  };
-  
-  // Simulate progress
-  useEffect(() => {
-    if (!playing) return;
-    
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 1) {
-          setPlaying(false);
-          clearInterval(interval);
-          return 1;
-        }
-        return prev + 0.001;
-      });
-    }, 100);
-    
-    return () => clearInterval(interval);
-  }, [playing]);
+  // Use our custom audio hook
+  const {
+    loading,
+    playing,
+    muted,
+    volume,
+    progress,
+    togglePlay,
+    toggleMute,
+    seek,
+    setVolume
+  } = useAudio({
+    mainAudioUrl: audioData.audioUrl,
+    backgroundAudioUrl: audioData.backgroundAudioUrl
+  });
   
   return (
     <motion.div
@@ -310,86 +343,58 @@ const MeditationDetail = () => {
         {/* Meditation info */}
         <motion.div variants={itemVariants} className="mb-8 text-center">
           <div className="text-5xl mb-4">{meditation.image}</div>
-          <h1 className="text-2xl font-medium mb-2 text-white">{meditation.title}</h1>
-          <p className="text-white/70 mb-2">{meditation.duration} min • {meditation.category}</p>
+          <h1 className="text-2xl font-medium mb-2 text-indigo-900">{meditation.title}</h1>
+          <p className="text-indigo-800 mb-2">{meditation.duration} min • {meditation.category}</p>
         </motion.div>
         
         {/* Meditation description */}
         <motion.div variants={itemVariants} className="mb-8">
-          <div className="glass rounded-xl p-6 bg-white/10">
-            <p className="text-white/80 leading-relaxed">{meditation.longDescription}</p>
+          <div className="glass rounded-xl p-6 bg-white/10 shadow-lg">
+            <p className="text-indigo-900 leading-relaxed font-semibold">{meditation.longDescription}</p>
           </div>
         </motion.div>
         
         {/* Player controls */}
         <motion.div 
           variants={itemVariants}
-          className={`glass rounded-xl p-6 ${playing ? 'bg-black/20' : 'bg-white/10'} transition-colors duration-1000`}
+          className={`glass rounded-xl p-4 sm:p-6 ${playing ? 'bg-black/20' : 'bg-white/10'} transition-colors duration-1000`}
         >
+          {/* Audio visualizer */}
+          <div className="mb-4 sm:mb-6 h-32 sm:h-40 rounded-xl overflow-hidden glass">
+            <AudioVisualizer 
+              isPlaying={playing}
+              intensity={0.7}
+              type={meditation.id === 'focus' ? 'circle' : meditation.id === 'anxiety-relief' ? 'particles' : 'wave'}
+              color={`rgba(${meditation.id === 'focus' ? '152, 251, 152' : meditation.id === 'anxiety-relief' ? '230, 230, 250' : '255, 182, 193'}, 0.7)`}
+            />
+          </div>
+          
           {/* Progress bar */}
-          <ProgressBar progress={progress} duration={meditation.duration} />
+          <ProgressBar progress={progress} duration={meditation.duration} seek={seek} />
           
           {/* Play/pause button */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-4 sm:mb-6">
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              className={`w-16 h-16 rounded-full ${playing ? 'bg-white' : 'bg-gradient-to-r from-purple-400 to-pink-400'} flex items-center justify-center`}
+              className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full ${playing ? 'bg-white' : 'bg-gradient-to-r from-purple-400 to-pink-400'} flex items-center justify-center`}
               onClick={togglePlay}
             >
               {playing ? (
-                <FaPause className={`text-2xl ${playing ? 'text-purple-500' : 'text-white'}`} />
+                <FaPause className={`text-xl ${playing ? 'text-purple-500' : 'text-white'}`} />
               ) : (
-                <FaPlay className="text-2xl text-white ml-1" />
+                <FaPlay className={`text-xl ${playing ? 'text-purple-500' : 'text-white'} ml-0.5`} />
               )}
             </motion.button>
           </div>
           
           {/* Volume controls */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Narration volume */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-white/70">Narration</span>
-                <button 
-                  onClick={() => setMuted(!muted)}
-                  className="text-white/70 hover:text-white"
-                >
-                  {muted ? <FaVolumeMute /> : <FaVolumeUp />}
-                </button>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={muted ? 0 : volume.narration * 100}
-                onChange={(e) => setVolume(prev => ({ ...prev, narration: parseInt(e.target.value) / 100 }))}
-                className="w-full h-2 bg-white/20 rounded-full appearance-none cursor-pointer"
-                style={{
-                  backgroundImage: `linear-gradient(to right, white ${muted ? 0 : volume.narration * 100}%, rgba(255,255,255,0.2) ${muted ? 0 : volume.narration * 100}%)`
-                }}
-              />
-            </div>
-            
-            {/* Background volume */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-white/70">Background</span>
-                <FaVolumeUp className="text-white/70" />
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={muted ? 0 : volume.background * 100}
-                onChange={(e) => setVolume(prev => ({ ...prev, background: parseInt(e.target.value) / 100 }))}
-                className="w-full h-2 bg-white/20 rounded-full appearance-none cursor-pointer"
-                style={{
-                  backgroundImage: `linear-gradient(to right, white ${muted ? 0 : volume.background * 100}%, rgba(255,255,255,0.2) ${muted ? 0 : volume.background * 100}%)`
-                }}
-              />
-            </div>
-          </div>
+          <VolumeControls 
+            volume={volume} 
+            onVolumeChange={setVolume} 
+            muted={muted} 
+            onMuteToggle={toggleMute} 
+          />
         </motion.div>
       </div>
     </motion.div>
